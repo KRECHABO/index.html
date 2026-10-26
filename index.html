@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktywny Symulator Wzmacniacza Operacyjnego</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --accent-hover: #0284c7;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: var(--accent-color);
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 1024px) {
+            .layout {
+                grid-template-columns: 380px 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .control-inputs {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        input[type="number"] {
+            width: 85px;
+            background-color: var(--bg-color);
+            color: var(--accent-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-align: right;
+            outline: none;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--accent-color);
+        }
+
+        select {
+            width: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        select:focus {
+            border-color: var(--accent-color);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+        }
+
+        .metric-card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .metric-card .title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .metric-card .value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-ok { background-color: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+        .status-warn { background-color: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .vis-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 1200px) {
+            .vis-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .canvas-box, .svg-box {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 320px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 260px;
+            background-color: #020617;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            max-height: 280px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Interaktywny Symulator Wzmacniacza Operacyjnego</h1>
+        <p>Precyzyjne sterowanie parametrami i podgląd sygnału w paśmie 10 Hz - 22 kHz</p>
+    </div>
+
+    <div class="layout">
+        <!-- PANEL STEROWANIA -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>Model Układu</span>
+                <span id="statusBadge" class="status-badge status-ok">Liniowy</span>
+            </div>
+
+            <div class="control-group">
+                <label for="icSelect" style="font-size: 0.85rem; color: var(--text-muted);">Wybór Układu Scalonego:</label>
+                <select id="icSelect">
+                    <option value="ua741">uA741 (Klasyczny uniwersalny)</option>
+                    <option value="tl071" selected>TL071 (JFET Niskoszumny)</option>
+                    <option value="ne5532">NE5532 (Hi-Fi Audio)</option>
+                    <option value="lm358">LM358 (Niskobudżetowy)</option>
+                    <option value="opa2134">OPA2134 (Precyzyjny Audio)</option>
+                </select>
+            </div>
+
+            <div class="panel-title" style="margin-top: 5px;">Zasilanie i Wejście</div>
+
+            <!-- VCC -->
+            <div class="control-group">
+                <div class="control-header">
+                    <span>Napięcie Zasilania Vcc [V]</span>
+                </div>
+                <div class="control-inputs">
+                    <input type="range" id="vccRange" min="3" max="30" step="0.5" value="15">
+                    <input type="number" id="vccNum" min="3" max="30" step="0.5" value="15">
+                </div>
+            </div>
+
+            <!-- VIN -->
+            <div class="control-group">
+                <div class="control-header">
+                    <span>Amplituda Wejściowa Vin [mV]</span>
+                </div>
+                <div class="control-inputs">
+                    <input type="range" id="vinRange" min="10" max="1000" step="10" value="100">
+                    <input type="number" id="vinNum" min="10" max="1000" step="10" value="100">
+                </div>
+            </div>
+
+            <!-- FREQ (do 22 kHz) -->
+            <div class="control-group">
+                <div class="control-header">
+                    <span>Częstotliwość f [Hz]</span>
+                </div>
+                <div class="control-inputs">
+                    <input type="range" id="freqRange" min="10" max="22000" step="10" value="1000">
+                    <input type="number" id="freqNum" min="10" max="22000" step="10" value="1000">
+                </div>
+            </div>
+
+            <div class="panel-title" style="margin-top: 5px;">Elementy R / C</div>
+
+            <!-- RFB -->
+            <div class="control-group">
+                <div class="control-header">
+                    <span>Rfb (Sprzężenie) [kΩ]</span>
+                </div>
+                <div class="control-inputs">
+                    <input type="range" id="rfbRange" min="1" max="200" step="1" value="30">
+                    <input type="number" id="rfbNum" min="1" max="200" step="1" value="30">
+                </div>
+            </div>
+
+            <!-- RG -->
+            <div class="control-group">
+                <div class="control-header">
+                    <span>Rg (Gałąź odwracająca) [kΩ]</span>
+                </div>
+                <div class="control-inputs">
+                    <input type="range" id="rgRange" min="0.5" max="20" step="0.1" value="2">
+                    <input type="number" id="rgNum" min="0.5" max="20" step="0.1" value="2">
+                </div>
+            </div>
+
+            <!-- C1 -->
+            <div class="control-group">
+                <div class="control-header">
+                    <span>C1 (Wejście) [µF]</span>
+                </div>
+                <div class="control-inputs">
+                    <input type="range" id="c1Range" min="0.01" max="2" step="0.01" value="0.1">
+                    <input type="number" id="c1Num" min="0.01" max="2" step="0.01" value="0.1">
+                </div>
+            </div>
+
+            <!-- CWY -->
+            <div class="control-group">
+                <div class="control-header">
+                    <span>Cwy (Wyjście) [µF]</span>
+                </div>
+                <div class="control-inputs">
+                    <input type="range" id="cwyRange" min="0.01" max="2" step="0.01" value="0.2">
+                    <input type="number" id="cwyNum" min="0.01" max="2" step="0.01" value="0.2">
+                </div>
+            </div>
+        </div>
+
+        <!-- SEKCJA WIZUALIZACJI I WYNIKÓW -->
+        <div class="main-content">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="title">Wzmocnienie Av</div>
+                    <div class="value" id="avMetric">16.0 x</div>
+                </div>
+                <div class="metric-card">
+                    <div class="title">Wzmocnienie [dB]</div>
+                    <div class="value" id="dbMetric">24.1 dB</div>
+                </div>
+                <div class="metric-card">
+                    <div class="title">Vout (Szczytowe)</div>
+                    <div class="value" id="voutMetric">1.60 V</div>
+                </div>
+                <div class="metric-card">
+                    <div class="title">Pasmo Dolne (fc_in)</div>
+                    <div class="value" id="fcMetric">15.9 Hz</div>
+                </div>
+            </div>
+
+            <div class="vis-container">
+                <!-- SCHEMAT SVG -->
+                <div class="svg-box">
+                    <div class="panel-title" style="width: 100%;">Schemat Układu</div>
+                    <svg viewBox="0 0 520 320" id="circuitSvg">
+                        <style>
+                            .wire { stroke: #94a3b8; stroke-width: 2; fill: none; stroke-linecap: round; }
+                            .component { stroke: #38bdf8; stroke-width: 2.5; fill: none; }
+                            .resistor { stroke: #f59e0b; stroke-width: 2; fill: #1e293b; }
+                            .text-val { fill: #f59e0b; font-size: 11px; font-weight: bold; text-anchor: middle; }
+                            .text-cap { fill: #38bdf8; font-size: 11px; font-weight: bold; text-anchor: middle; }
+                            .text-lbl { fill: #f8fafc; font-size: 12px; font-family: sans-serif; }
+                            .dot { fill: #f8fafc; }
+                        </style>
+
+                        <!-- TRÓJKĄT WZMACNIACZA -->
+                        <polygon points="260,80 260,220 380,150" fill="#1e293b" stroke="#38bdf8" stroke-width="3"/>
+                        <text x="270" y="115" fill="#fff" font-size="18" font-weight="bold">+</text>
+                        <text x="270" y="195" fill="#fff" font-size="18" font-weight="bold">-</text>
+                        <text x="295" y="155" fill="#38bdf8" font-size="13" font-weight="bold" id="svgIcName" text-anchor="middle">TL071</text>
+
+                        <!-- ZASILANIE VCC -->
+                        <line x1="320" y1="20" x2="320" y2="115" class="wire" />
+                        <circle cx="320" cy="20" r="3" class="dot"/>
+                        <text x="320" y="12" fill="#ef4444" font-size="11" font-weight="bold" text-anchor="middle">+Vcc</text>
+
+                        <!-- WEJŚCIE SYGNAŁU -->
+                        <line x1="20" y1="130" x2="50" y2="130" class="wire" />
+                        <circle cx="20" cy="130" r="3" class="dot"/>
+                        <text x="15" y="125" fill="#fff" font-size="11">In</text>
+
+                        <!-- C1 (0.1 uF) -->
+                        <line x1="50" y1="115" x2="50" y2="145" class="component" />
+                        <line x1="58" y1="115" x2="58" y2="145" class="component" />
+                        <text x="54" y="105" class="text-cap" id="svgC1">0.1uF</text>
+                        <line x1="58" y1="130" x2="140" y2="130" class="wire" />
+
+                        <!-- DZIELNIK NAPIĘCIA 220k / 220k -->
+                        <line x1="140" y1="20" x2="140" y2="240" class="wire" />
+                        <line x1="140" y1="20" x2="320" y2="20" class="wire" />
+                        
+                        <!-- R_górny (220k) -->
+                        <rect x="130" y="40" width="20" height="35" class="resistor" />
+                        <text x="110" y="60" class="text-val">220k</text>
+
+                        <!-- R_dolny (220k) -->
+                        <rect x="130" y="160" width="20" height="35" class="resistor" />
+                        <text x="110" y="180" class="text-val">220k</text>
+
+                        <!-- MASA DZIELNIKA -->
+                        <line x1="130" y1="240" x2="150" y2="240" class="wire" />
+                        <line x1="134" y1="245" x2="146" y2="245" class="wire" />
+                        <line x1="138" y1="250" x2="142" y2="250" class="wire" />
+
+                        <!-- C_filtr (0.5 uF) DO MASY -->
+                        <line x1="140" y1="130" x2="100" y2="130" class="wire" />
+                        <line x1="100" y1="130" x2="100" y2="160" class="wire" />
+                        <line x1="88" y1="160" x2="112" y2="160" class="component" />
+                        <line x1="88" y1="168" x2="112" y2="168" class="component" />
+                        <text x="70" y="168" class="text-cap">0.5uF</text>
+                        <line x1="100" y1="168" x2="100" y2="190" class="wire" />
+                        <line x1="90" y1="190" x2="110" y2="190" class="wire" />
+                        <line x1="94" y1="194" x2="106" y2="194" class="wire" />
+
+                        <!-- REZYSTOR WEJŚCIOWY 100k DO WEJŚCIA (+) -->
+                        <rect x="175" y="120" width="40" height="20" class="resistor" />
+                        <text x="195" y="112" class="text-val">100k</text>
+                        <line x1="140" y1="130" x2="175" y2="130" class="wire" />
+                        <line x1="215" y1="130" x2="260" y2="130" class="wire" />
+                        <circle cx="140" cy="130" r="3" class="dot"/>
+
+                        <!-- PĘTLA SPRZĘŻENIA (Rfb = 30k) -->
+                        <line x1="260" y1="180" x2="230" y2="180" class="wire" />
+                        <line x1="230" y1="180" x2="230" y2="240" class="wire" />
+                        <rect x="280" y="230" width="45" height="20" class="resistor" />
+                        <text x="302" y="222" class="text-val" id="svgRfb">30k</text>
+                        <line x1="230" y1="240" x2="280" y2="240" class="wire" />
+                        <line x1="325" y1="240" x2="410" y2="240" class="wire" />
+                        <line x1="410" y1="240" x2="410" y2="150" class="wire" />
+                        <circle cx="410" cy="150" r="3" class="dot"/>
+
+                        <!-- GAŁĄŹ ODWRACAJĄCA (Rg = 2k + C = 1uF DO MASY) -->
+                        <rect x="220" y="200" width="20" height="35" class="resistor" />
+                        <text x="200" y="220" class="text-val" id="svgRg">2k</text>
+                        <line x1="230" y1="235" x2="230" y2="255" class="wire" />
+                        <line x1="218" y1="255" x2="242" y2="255" class="component" />
+                        <line x1="218" y1="262" x2="242" y2="262" class="component" />
+                        <text x="200" y="262" class="text-cap">1uF</text>
+                        <line x1="230" y1="262" x2="230" y2="280" class="wire" />
+                        <line x1="220" y1="280" x2="240" y2="280" class="wire" />
+                        <line x1="224" y1="284" x2="236" y2="284" class="wire" />
+
+                        <!-- WYJŚCIE (C_wy = 0.2 uF + R_load = 12k) -->
+                        <line x1="380" y1="150" x2="430" y2="150" class="wire" />
+                        <line x1="430" y1="135" x2="430" y2="165" class="component" />
+                        <line x1="438" y1="135" x2="438" y2="165" class="component" />
+                        <text x="434" y="125" class="text-cap" id="svgCwy">0.2uF</text>
+                        <line x1="438" y1="150" x2="490" y2="150" class="wire" />
+                        <circle cx="490" cy="150" r="3" class="dot"/>
+                        <text x="500" y="154" class="text-lbl">Vout</text>
+
+                        <!-- Obciążenie 12k do masy -->
+                        <line x1="475" y1="150" x2="475" y2="180" class="wire" />
+                        <rect x="465" y="180" width="20" height="35" class="resistor" />
+                        <text x="500" y="200" class="text-val">12k</text>
+                        <line x1="475" y1="215" x2="475" y2="235" class="wire" />
+                        <line x1="465" y1="235" x2="485" y2="235" class="wire" />
+                        <line x1="469" y1="239" x2="481" y2="239" class="wire" />
+                    </svg>
+                </div>
+
+                <!-- OSCYLOSKOP CANVAS -->
+                <div class="canvas-box">
+                    <div class="panel-title" style="width: 100%;">Oscyloskop (Sygnał Czasowy)</div>
+                    <canvas id="scopeCanvas" width="500" height="260"></canvas>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #38bdf8;"></div>
+                            <span>Wejście (Vin)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #f43f5e;"></div>
+                            <span>Wyjście (Vout)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const icDatabase = {
+            ua741:   { name: 'uA741',   vSat: 2.0, gbw: 1000000 },
+            tl071:   { name: 'TL071',   vSat: 1.5, gbw: 3000000 },
+            ne5532:  { name: 'NE5532',  vSat: 1.2, gbw: 10000000 },
+            lm358:   { name: 'LM358',   vSat: 1.8, gbw: 700000 },
+            opa2134: { name: 'OPA2134', vSat: 1.0, gbw: 8000000 }
+        };
+
+        const icSelect = document.getElementById('icSelect');
+
+        // Powiązanie suwaków z polami numerycznymi
+        const controls = [
+            { range: 'vccRange', num: 'vccNum' },
+            { range: 'vinRange', num: 'vinNum' },
+            { range: 'freqRange', num: 'freqNum' },
+            { range: 'rfbRange', num: 'rfbNum' },
+            { range: 'rgRange', num: 'rgNum' },
+            { range: 'c1Range', num: 'c1Num' },
+            { range: 'cwyRange', num: 'cwyNum' }
+        ];
+
+        controls.forEach(ctrl => {
+            const rangeEl = document.getElementById(ctrl.range);
+            const numEl = document.getElementById(ctrl.num);
+
+            rangeEl.addEventListener('input', () => {
+                numEl.value = rangeEl.value;
+                updateSimulation();
+            });
+
+            numEl.addEventListener('input', () => {
+                rangeEl.value = numEl.value;
+                updateSimulation();
+            });
+        });
+
+        icSelect.addEventListener('change', updateSimulation);
+
+        const avMetric = document.getElementById('avMetric');
+        const dbMetric = document.getElementById('dbMetric');
+        const voutMetric = document.getElementById('voutMetric');
+        const fcMetric = document.getElementById('fcMetric');
+        const statusBadge = document.getElementById('statusBadge');
+
+        const svgIcName = document.getElementById('svgIcName');
+        const svgC1 = document.getElementById('svgC1');
+        const svgRfb = document.getElementById('svgRfb');
+        const svgRg = document.getElementById('svgRg');
+        const svgCwy = document.getElementById('svgCwy');
+
+        const canvas = document.getElementById('scopeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let timeOffset = 0;
+
+        function updateSimulation() {
+            const selectedIc = icDatabase[icSelect.value];
+            const vcc = parseFloat(document.getElementById('vccNum').value) || 15;
+            const vin = (parseFloat(document.getElementById('vinNum').value) || 100) / 1000;
+            const freq = parseFloat(document.getElementById('freqNum').value) || 1000;
+            const rfb = (parseFloat(document.getElementById('rfbNum').value) || 30) * 1000;
+            const rg = (parseFloat(document.getElementById('rgNum').value) || 2) * 1000;
+            const c1 = (parseFloat(document.getElementById('c1Num').value) || 0.1) * 1e-6;
+
+            svgIcName.textContent = selectedIc.name;
+            svgC1.textContent = `${document.getElementById('c1Num').value}uF`;
+            svgRfb.textContent = `${document.getElementById('rfbNum').value}k`;
+            svgRg.textContent = `${document.getElementById('rgNum').value}k`;
+            svgCwy.textContent = `${document.getElementById('cwyNum').value}uF`;
+
+            const av = 1 + (rfb / rg);
+            const db = 20 * Math.log10(av);
+            const maxVout = Math.max(0, vcc - selectedIc.vSat);
+
+            const fcIn = 1 / (2 * Math.PI * 100000 * c1);
+
+            let idealVout = vin * av;
+            let isClipping = idealVout > maxVout;
+            let actualVout = Math.min(idealVout, maxVout);
+
+            avMetric.textContent = `${av.toFixed(1)} x`;
+            dbMetric.textContent = `${db.toFixed(1)} dB`;
+            voutMetric.textContent = `${actualVout.toFixed(2)} V`;
+            fcMetric.textContent = `${fcIn.toFixed(1)} Hz`;
+
+            if (isClipping) {
+                statusBadge.textContent = "Przesterowanie";
+                statusBadge.className = "status-badge status-warn";
+            } else {
+                statusBadge.textContent = "Liniowy";
+                statusBadge.className = "status-badge status-ok";
+            }
+
+            drawScope(vin, actualVout, maxVout, freq, isClipping);
+        }
+
+        function drawScope(vin, vout, maxVout, freq, isClipping) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Siatka oscyloskopu
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 25) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 25) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Oś zero (środkowa)
+            ctx.strokeStyle = '#334155';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+
+            const centerY = canvas.height / 2;
+            const scaleY = 35;
+
+            // Nasycenie Vcc
+            ctx.strokeStyle = '#ef4444';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(0, centerY - maxVout * scaleY);
+            ctx.lineTo(canvas.width, centerY - maxVout * scaleY);
+            ctx.moveTo(0, centerY + maxVout * scaleY);
+            ctx.lineTo(canvas.width, centerY + maxVout * scaleY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Skalowanie prędkości fali w zależności od f
+            const timeStep = 0.02 * (Math.min(freq, 5000) / 1000);
+
+            // Sygnał Wejściowy Vin
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x++) {
+                let t = (x + timeOffset) * timeStep;
+                let y = centerY - Math.sin(t) * vin * scaleY * 4;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Sygnał Wyjściowy Vout
+            ctx.strokeStyle = isClipping ? '#ef4444' : '#f43f5e';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            for (let x = 0; x < canvas.width; x++) {
+                let t = (x + timeOffset) * timeStep;
+                let rawY = Math.sin(t) * (vout * (isClipping ? 1.4 : 1));
+                
+                if (rawY > maxVout) rawY = maxVout;
+                if (rawY < -maxVout) rawY = -maxVout;
+
+                let y = centerY - rawY * scaleY;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            timeOffset += 1;
+        }
+
+        function animate() {
+            updateSimulation();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
